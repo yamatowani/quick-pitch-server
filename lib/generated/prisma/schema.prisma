@@ -1,0 +1,136 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum MeetingNotesType {
+  PDF
+  TXT
+  MD
+}
+
+enum RfpType {
+  PDF
+  TXT
+  MD
+}
+
+enum ProposalType {
+  PDF
+  PPTX
+  HTML
+  MD
+}
+
+enum PrototypeType {
+  PDF
+  PPTX
+  HTML
+  MD
+}
+
+enum ProposalStatus {
+  DRAFT
+  REVIEW
+  FINAL
+}
+
+model ClientCompany {
+  id           Int           @id @default(autoincrement())
+  name         String
+  meetings     Meeting[]
+  meetingNotes MeetingNote[]
+  rfps         Rfp[]
+  proposals    Proposal[]
+  prototypes   Prototype[]
+
+  @@map("client_companies")
+}
+
+model Meeting {
+  id              Int            @id @default(autoincrement())
+  clientCompanyId Int?           @map("client_company_id")
+  title           String
+  date            DateTime       @default(now())
+  createdAt       DateTime       @default(now()) @map("created_at")
+  clientCompany   ClientCompany? @relation(fields: [clientCompanyId], references: [id], onDelete: SetNull)
+  meetingNotes    MeetingNote[]
+  rfps            Rfp[]
+  proposals       Proposal[]
+  prototypes      Prototype[]
+
+  @@map("meetings")
+}
+
+model MeetingNote {
+  id              Int              @id @default(autoincrement())
+  meetingId       Int?             @map("meeting_id")
+  clientCompanyId Int?             @map("client_company_id")
+  s3Key           String           @unique @map("s3_key")
+  filename        String
+  type            MeetingNotesType
+  title           String
+  summary         String?
+  createdAt       DateTime         @default(now()) @map("created_at")
+  meeting         Meeting?         @relation(fields: [meetingId], references: [id], onDelete: SetNull)
+  clientCompany   ClientCompany?   @relation(fields: [clientCompanyId], references: [id], onDelete: SetNull)
+
+  @@map("meeting_notes")
+}
+
+model Rfp {
+  id              Int            @id @default(autoincrement())
+  meetingId       Int?           @map("meeting_id")
+  clientCompanyId Int?           @map("client_company_id")
+  s3Key           String         @unique @map("s3_key")
+  filename        String
+  type            RfpType
+  title           String
+  summary         String?
+  createdAt       DateTime       @default(now()) @map("created_at")
+  meeting         Meeting?       @relation(fields: [meetingId], references: [id], onDelete: SetNull)
+  clientCompany   ClientCompany? @relation(fields: [clientCompanyId], references: [id], onDelete: SetNull)
+  proposals       Proposal[]
+
+  @@map("rfps")
+}
+
+model Proposal {
+  id              Int            @id @default(autoincrement())
+  meetingId       Int?           @map("meeting_id")
+  clientCompanyId Int?           @map("client_company_id")
+  s3Key           String         @unique @map("s3_key")
+  filename        String
+  type            ProposalType
+  rfpId           Int?           @map("rfp_id")
+  status          ProposalStatus @default(DRAFT)
+  version         Int            @default(1)
+  createdAt       DateTime       @default(now()) @map("created_at")
+  meeting         Meeting?       @relation(fields: [meetingId], references: [id], onDelete: SetNull)
+  clientCompany   ClientCompany? @relation(fields: [clientCompanyId], references: [id], onDelete: SetNull)
+  rfp             Rfp?           @relation(fields: [rfpId], references: [id], onDelete: SetNull)
+
+  @@map("proposals")
+}
+
+model Prototype {
+  id              Int            @id @default(autoincrement())
+  meetingId       Int?           @map("meeting_id")
+  clientCompanyId Int?           @map("client_company_id")
+  s3Key           String         @unique @map("s3_key")
+  filename        String
+  type            PrototypeType
+  createdAt       DateTime       @default(now()) @map("created_at")
+  meeting         Meeting?       @relation(fields: [meetingId], references: [id], onDelete: SetNull)
+  clientCompany   ClientCompany? @relation(fields: [clientCompanyId], references: [id], onDelete: SetNull)
+
+  @@map("prototypes")
+}
